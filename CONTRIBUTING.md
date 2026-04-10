@@ -85,6 +85,8 @@ git push origin feature/US-XX-short-description
 
 ## Getting Started
 
+## Getting Started
+
 ### Prerequisites
 - Python 3.10+
 - Node.js 16+ (for frontend)
@@ -106,6 +108,8 @@ pip install -r requirements.txt
 cd frontend
 npm install
 ```
+
+For detailed setup, see [docs/guides/QUICKSTART.md](docs/guides/QUICKSTART.md).
 
 ## Development
 

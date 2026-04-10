@@ -108,4 +108,4 @@ ollama pull mistral
 
 ---
 
-See [README.md](README.md) for full documentation.
+See [../README.md](../README.md) for full documentation.

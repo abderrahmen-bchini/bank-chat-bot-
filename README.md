@@ -271,14 +271,17 @@ Quick checklist:
 
 ## Documentation
 
-- [QUICKSTART.md](QUICKSTART.md) — Setup and run locally
-- [ARCHITECTURE.md](ARCHITECTURE.md) — System design
-- [API.md](API.md) — REST API reference
-- [BACKLOG.md](BACKLOG.md) — Product backlog
-- [CONTRIBUTING.md](CONTRIBUTING.md) — Development guide and workflows
-- [GITHUB_DESKTOP.md](GITHUB_DESKTOP.md) — GitHub Desktop step-by-step guide
-- [RETROSPECTIVE.md](RETROSPECTIVE.md) — Sprint retrospectives
-- [GITHUB_SETUP.md](GITHUB_SETUP.md) — GitHub configuration
+See [docs/](docs/) for complete documentation:
+
+- [Quick Start](docs/guides/QUICKSTART.md) — Setup and run locally
+- [Architecture](docs/ARCHITECTURE.md) — System design
+- [API Reference](docs/API.md) — REST API endpoints
+- [Product Backlog](docs/project/BACKLOG.md) — User stories and sprints
+- [GitHub Desktop Guide](docs/guides/GITHUB_DESKTOP.md) — Branching and PR workflow
+- [GitHub Setup](docs/guides/GITHUB_SETUP.md) — Repository configuration
+
+Additional:
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
 
 ---
 
