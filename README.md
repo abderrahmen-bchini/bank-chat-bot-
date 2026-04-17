@@ -53,8 +53,8 @@ A Retrieval-Augmented Generation (RAG) chatbot that:
 | Frontend | React 18 |
 | Vector Database | Qdrant |
 | Embeddings | Sentence-BERT (local) |
-| Language Model | Ollama with Mistral/Llama 2 |
-| Metadata Database | PostgreSQL |
+| Language Model | Ollama with Mistral/Llama 2 / Groq / openai  |
+| Metadata Database | Qdrant |
 | Authentication | JWT + RBAC |
 | Deployment | Docker Compose |
 
@@ -71,58 +71,46 @@ cd bank-chat-bot-
 cp .env.example .env
 docker-compose up -d
 
-# Services available at:
+# Services available at ( not available yet ):
 # API: http://localhost:8000
 # Frontend: http://localhost:3000
 # Qdrant: http://localhost:6333/dashboard
 ```
-
-### Manual Setup
-
-**Backend:**
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python -m uvicorn api.main:app --reload
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm start
-```
-
-See [QUICKSTART.md](QUICKSTART.md) for detailed setup instructions.
 
 ---
 
 ## Project Structure
 
 ```
-bank-chat-bot-/
-├── backend/
-│   ├── api/              # FastAPI routes
-│   ├── ingestion/        # Document processing
-│   ├── retrieval/        # Vector search
-│   ├── llm/              # LLM integration
-│   ├── auth/             # Authentication
-│   └── requirements.txt
-├── frontend/             # React application
-├── data/                 # Sample documents
-├── tests/                # Unit & integration tests
-├── docker-compose.yml    # Full stack deployment
-├── .env.example          # Configuration template
-├── README.md             # This file
-├── CONTRIBUTING.md       # Development guidelines
-├── ARCHITECTURE.md       # System design
-├── BACKLOG.md           # Product backlog
-├── API.md               # API reference
-├── QUICKSTART.md        # Setup guide
-└── RETROSPECTIVE.md     # Sprint retrospectives
-```
+``.
+├── data
+├── docs
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── guides
+│   ├── project
+│   ├── README.md
+│   └── templates
+├── main.py
+├── README.md
+├── requirements.txt
+├── src
+│   ├── config.py
+│   ├── embeddings.py
+│   ├── loader.py
+│   ├── __pycache__
+│   ├── splitter.py
+│   ├── test_embeddings.py
+│   ├── test.py
+│   ├── test_qdrant.py
+│   └── vector_store.py
+└── venv
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    ├── pyvenv.cfg
+    └── share`
 
 ---
 
@@ -144,7 +132,6 @@ User Query → Validate → Embed → Search Qdrant → Filter by Role
 → Build Prompt → Call LLM → Validate → Return with Citations → Log
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed system design.
 
 ---
 
@@ -186,7 +173,6 @@ Planned
 - US-20: One-command deployment
 - US-21: Performance testing
 
-See [BACKLOG.md](BACKLOG.md) for complete product backlog.
 
 ---
 
@@ -204,31 +190,39 @@ We protect `main` by requiring all code to go through feature branches and pull 
 
 ```
 main              ← Production-ready (protected)
-develop           ← Integration branch (default)
-feature/US-XX-*   ← Feature branches
-fix/*             ← Bug fixes
+abderrahmen              ← Abderrahmen Bchini branch  
+yassine              ← Yassine Ncib Branch  
+
 ```
 
-### Using GitHub Desktop
+### Using GitHub Desktop (Yassine Ncib)
 
-We use **GitHub Desktop** for branch management:
+use **GitHub Desktop** for branch management:
 
 1. **Create branch**: Current Branch → New Branch → Name → Create
 2. **Make changes**: Edit files → Commit → Push origin
 3. **Create PR**: After push → Create Pull Request
 4. **Review & Merge**: Team reviews → Squash and merge
+ 
+### Using remote access fron the terminal (Abderrahmen Bchini)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed GitHub Desktop steps.
+using the **terminal** for branch management:
+
+1. **Create branch**: git checkout -b branch-name 
+2. **Make changes**:
+    git add . 
+    git commint -m "your message"
+    git push -u origin branch-name 
+3. **Create Pull Request **: After push → Create a pull request on GitHub 
+4. **Review & Merge**: Team reviews → Squash and merge
 
 ### Commit Convention
 
 ```
-feat(scope): description
-fix(scope): description
 docs: description
 ```
 
-### Pull Request Process
+### Pull Request Process (in work)
 
 1. Create feature branch from `develop`
 2. Implement changes with tests
@@ -240,38 +234,9 @@ docs: description
 
 ---
 
-## Contributing
-
-All contributors must follow the guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Quick checklist:
-- Read CONTRIBUTING.md
-- Follow git workflow
-- Write tests for new features
-- Follow code standards
-- Request peer review before merging
-
----
-
-## Team
-
-| Role | Name | Email |
-|------|------|-------|
-| Project Lead | [Name] | [email] |
-| Backend | [Name] | [email] |
-| Frontend | [Name] | [email] |
-| DevOps | [Name] | [email] |
-| Supervisor | [Name] | [email] |
-
-**University**: [Institution]  
-**Department**: Software Engineering  
-**Period**: [Start] — [End]
-
----
 
 ## Documentation
 
-See [docs/](docs/) for complete documentation:
 
 - [Quick Start](docs/guides/QUICKSTART.md) — Setup and run locally
 - [Architecture](docs/ARCHITECTURE.md) — System design
@@ -284,155 +249,6 @@ Additional:
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
 
 ---
-
-## License
-
-This project is the intellectual property of [Institution]. For educational use only.
-
----
-
-## Support
-
-For questions:
-1. Check existing GitHub Issues
-2. Review documentation
-3. Open new issue with relevant label
-4. Contact team via supervisor
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | Python, FastAPI |
-| **Document Processing** | PyPDF2, python-docx, Langchain |
-| **Vector Store** | Qdrant (local) |
-| **Embeddings** | Local embedding model (Sentence-BERT, MiniLM) |
-| **LLM** | Ollama / Local LLM (Mistral, Llama 2) |
-| **Frontend** | React/Vue.js (Sprint 5) or HTML/CSS/JS |
-| **Deployment** | Docker, Docker Compose |
-| **Database** | PostgreSQL (metadata), Qdrant (vectors) |
-| **Auth** | JWT + Role-Based Access Control |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Git
-- Docker & Docker Compose
-- Python 3.10+
-- 8GB RAM (16GB recommended for LLM)
-
-### Installation & Local Deployment
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/abderrahmen-bchini/bank-chat-bot-.git
-cd bank-chat-bot-
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# 4. Start with Docker Compose (one command)
-docker-compose up -d
-
-# 5. Access the system
-# Backend API: http://localhost:8000
-# Frontend: http://localhost:3000
-# Qdrant UI: http://localhost:6333/dashboard
-```
-
-### Manual Setup (Development)
-
-```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-python -m uvicorn api.main:app --reload
-
-# Frontend (separate terminal)
-cd frontend
-npm install
-npm start
-
-# Qdrant (Docker)
-docker run -p 6333:6333 qdrant/qdrant
-```
-
----
-
-## 📁 Repository Structure
-
-```
-bank-chat-bot-/
-├── backend/
-│   ├── api/                    # FastAPI routes
-│   │   ├── main.py
-│   │   ├── auth.py            # JWT & role management
-│   │   └── documents.py        # File upload endpoints
-│   ├── ingestion/              # Document processing
-│   │   ├── loader.py           # PDF/DOCX/TXT extraction
-│   │   ├── cleaner.py          # Text cleaning & normalization
-│   │   ├── chunker.py          # Semantic chunking
-│   │   └── embedder.py         # Embedding generation
-│   ├── retrieval/              # Vector search
-│   │   ├── qdrant_client.py    # Qdrant integration
-│   │   └── retriever.py        # Semantic search logic
-│   ├── llm/                    # LLM integration
-│   │   ├── prompt_builder.py   # Context injection
-│   │   ├── generator.py        # Answer generation
-│   │   └── hallucination_check.py  # Fact validation
-│   ├── auth/                   # Authentication & security
-│   │   ├── jwt_handler.py
-│   │   ├── rbac.py             # Role-based access
-│   │   └── audit.py            # Query logging
-│   ├── config.py               # Configuration
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ChatInterface.js
-│   │   │   ├── DocumentUpload.js
-│   │   │   └── AdminPanel.js
-│   │   └── App.js
-│   ├── package.json
-│   └── .env.example
-├── data/
-│   ├── sample_documents/       # Test PDFs (no real data)
-│   └── embeddings/             # Cache
-├── tests/
-│   ├── test_ingestion.py
-│   ├── test_retrieval.py
-│   ├── test_llm.py
-│   └── test_auth.py
-├── docs/
-│   ├── ARCHITECTURE.md         # System design
-│   ├── API.md                  # API documentation
-│   ├── DEPLOYMENT.md           # Deployment guide
-│   └── diagrams/               # Architecture diagrams
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
-│   └── PULL_REQUEST_TEMPLATE.md
-├── docker-compose.yml
-├── Dockerfile
-├── .gitignore
-├── README.md
-├── CONTRIBUTING.md
-└── LICENSE
-```
-
----
-
 ## 🏗️ Architecture
 
 ```
@@ -550,7 +366,6 @@ Prefixes: feat, fix, docs, test, refactor, chore
 
 ## 📝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ### Quick Checklist
 - [ ] Fork and create a feature branch
@@ -565,15 +380,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 | Role | Name | Email |
 |------|------|-------|
-| **Project Lead** | [Your Name] | [email] |
-| **Backend Lead** | [Name] | [email] |
-| **Frontend Lead** | [Name] | [email] |
-| **DevOps/Infra** | [Name] | [email] |
-| **Supervisor** | [Supervisor Name] | [email] |
+| Project Lead | Abderrahmen | abderrahmen.bchini@musteducation.tn |
+| Backend | Abderrahmen | abderrahmen.bchini@musteducation.tn |
+| Frontend | Yassine | mohamedyassine.ncib@musteducation.tn |
+| DevOps | Abderrahmen , Yassine |  abderrahmen.bchini@musteducation.tn , mohamedyassine.ncib@musteducation.tn|
+| Supervisor | Naoufel Kraiem | no email |
 
-**University**: [Your University]  
+**University**: MUST University 
 **Department**: Software Engineering  
-**Capstone Period**: [Dates]
+**Period**: Feb 2026 , June 2026
+
 
 ---
 
@@ -588,19 +404,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## ⚖️ License
 
-This project is the intellectual property of [Your University/Organization]. For educational use only.
+This project is the intellectual property of Abderrahmen Bchini & Yassine Ncib For educational use only and it cannot be used for commerical use without the permission of the repo owner .
 
 ---
-
-## 📞 Support
-
-For questions or issues:
-1. Check existing [GitHub Issues](https://github.com/abderrahmen-bchini/bank-chat-bot-/issues)
-2. Review [documentation](docs/)
-3. Open a new issue with `bug` or `question` label
-4. Contact team via supervisor
-
----
-
-**Last Updated**: April 2025  
+**Last Updated**: April 2026 
 **Project Status**: Sprint 2 - Document Ingestion Pipeline
