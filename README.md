@@ -122,7 +122,6 @@ docker-compose up -d
 - **Ingestion**: Document parsing, text cleaning, chunking, embedding generation
 - **Retrieval**: Vector similarity search with Qdrant
 - **Generation**: LLM context injection and answer generation
-- **Storage**: PostgreSQL for metadata, Qdrant for embeddings
 - **Auth**: JWT-based authentication with role-based access
 
 ### Data Flow
@@ -249,47 +248,6 @@ Additional:
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
 
 ---
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     USER INTERFACE                          │
-│              (React Web, Mobile Friendly)                   │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────────┐
-│                   FASTAPI BACKEND                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ Query Router │  │ Auth/RBAC    │  │ Upload API   │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-└─────────┼──────────────────┼──────────────────┼─────────────┘
-          │                  │                  │
-    ┌─────▼────────┬─────────▼──────┬──────────▼──────┐
-    │              │                │                 │
-┌───▼──────────┐ ┌─▼────────────┐ ┌─▼──────────────┐ │
-│   RETRIEVAL  │ │ INGESTION    │ │    STORAGE     │ │
-│              │ │              │ │                │ │
-│ • Qdrant     │ │ • PDF loader │ │ • PostgreSQL   │ │
-│   Search     │ │ • DOCX loader│ │   (metadata)   │ │
-│ • Embedding  │ │ • Chunker    │ │ • Qdrant       │ │
-│   Model      │ │ • Cleaner    │ │   (vectors)    │ │
-└──────────────┘ └──────────────┘ └────────────────┘ │
-    │                                                  │
-└────┬──────────────────────────────────────────────────┘
-     │
-┌────▼──────────────────────────────────────────────────┐
-│              LLM LAYER (LOCAL)                        │
-│  ┌──────────────────────────────────────────────┐   │
-│  │  Ollama / Local LLM (Mistral, Llama 2)       │   │
-│  │  • Context Injection                         │   │
-│  │  • Answer Generation                         │   │
-│  │  • Hallucination Check                       │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
 ## 📊 Sprints & Progress
 
 ### Epic 1: Infrastructure & Setup ✅ **SPRINT 1 — DONE**
