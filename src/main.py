@@ -4,6 +4,7 @@ from ai_chat  import *
 from qdrant_client import AsyncQdrantClient, models
 import os 
 import asyncio
+
 async def check_points(client: AsyncQdrantClient , collection_name: str , file_path: str = "expected_points.txt"):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"{file_path} not found ")
@@ -15,12 +16,14 @@ async def check_points(client: AsyncQdrantClient , collection_name: str , file_p
     if actual_points == expected_points : 
         return True 
     else : 
-        with open(file_path , "w") as f : 
-            f.write(str(actual_points))
-        print("the value of expected points has beed updated ")
         return False 
-
-
+async def update_expected_points() : 
+    client = AsyncQdrantClient(host="localhost" , port=6333)
+    count = await client.count(collection_name=COLLECTION_NAME , exact=True)
+    count = count.count 
+    with open("expected_points.txt" , "w") as f :
+        f.write(str(count))
+    print("the value of expected_points has been updated ")
 
 async def main():
 # we need to check if the database exists 
@@ -30,9 +33,11 @@ async def main():
     check = await check_points(client , COLLECTION_NAME)
     if not(check) : 
         embed_database()
+        await update_expected_points()
     start_chat_bot()  
 
 
 
 
 asyncio.run(main())
+# asyncio.run(update_expected_points())
