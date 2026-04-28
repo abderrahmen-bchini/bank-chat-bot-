@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — Wifak Assistant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <div class="admin-title">Admin Panel</div>
+        <nav class="admin-nav">
+          <a class="admin-link" href="/admin/ingestion">Ingestion Preview</a>
+          <a class="admin-link" href="/admin/library">Document Library</a>
+          <a class="admin-link" href="/">Chat</a>
+          <a class="admin-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid">
+        <div class="admin-card">
+          <div class="admin-card-title">System Status</div>
+
+          <div class="admin-row">
+            <div class="admin-k">Qdrant</div>
+            <div class="admin-v {{ 'ok' if status.qdrant.ok else 'bad' }}">
+              {{ 'Reachable' if status.qdrant.ok else 'Not reachable' }}
+              <span class="admin-sub">{{ status.qdrant.detail }}</span>
+            </div>
+          </div>
+
+          <div class="admin-row">
+            <div class="admin-k">Collection</div>
+            <div class="admin-v {{ 'ok' if status.collection.exists else 'warn' }}">
+              {{ 'Exists' if status.collection.exists else 'Missing' }}
+              {% if status.collection.points is not none %}
+              <span class="admin-sub">Actual points: {{ status.collection.points }}</span>
+              {% endif %}
+              {% if status.expected_points is not none %}
+              <span class="admin-sub">Expected points: {{ status.expected_points }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if msg %}
+          <div class="admin-msg" role="status">{{ msg }}</div>
+          {% endif %}
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Documents</div>
+          <p class="admin-p">
+            Upload internal documents, convert them to Markdown, and store them under <strong>data/ingested</strong>.
+          </p>
+
+          <a class="send admin-action" href="/admin/library" style="text-align: center; display: inline-block; text-decoration: none;">
+            Open Document Library
+          </a>
+
+          <div style="height: 10px"></div>
+
+          <form method="POST" action="/admin/upload" enctype="multipart/form-data">
+            <label class="auth-label" for="files">Select file(s)</label>
+            <input class="input" id="files" type="file" name="files" multiple />
+
+            <label class="admin-check">
+              <input type="checkbox" name="index_now" />
+              Index immediately (runs ingestion after conversion)
+            </label>
+
+            <button class="send admin-action" type="submit">Upload & Convert</button>
+          </form>
+
+          <p class="admin-note">
+            Supported now: <strong>.md</strong>, <strong>.txt</strong>.
+            Optional: <strong>.pdf</strong>, <strong>.docx</strong>, <strong>.png/.jpg</strong> (requires extra packages).
+          </p>
+
+          <div class="admin-row" style="margin-top: 10px">
+            <div class="admin-k">Markdown files in data/</div>
+            <div class="admin-v ok">
+              {{ status.data_md_count }}
+              {% if status.latest_md %}
+              <span class="admin-sub">Latest: {{ status.latest_md | join(', ') }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Ingestion</div>
+          <p class="admin-p">
+            This runs the admin pipeline (load → split → embed → upsert) into Qdrant.
+          </p>
+
+          <a class="admin-btn" href="/admin/ingestion" style="margin: 2px 0 10px">Preview splitting & IDs</a>
+
+          <form method="POST" action="/admin/ingest">
+            <button class="send admin-action" type="submit">Run Ingestion (Force)</button>
+          </form>
+
+          <form method="POST" action="/admin/ensure-index" style="margin-top: 10px">
+            <button class="send admin-action" type="submit">Ensure Index Up-to-date</button>
+          </form>
+
+          <p class="admin-note">
+            Tip: ensure Qdrant is running on <strong>http://127.0.0.1:6333</strong> (or configure <code>QDRANT_URL</code> in <code>.env</code>).
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

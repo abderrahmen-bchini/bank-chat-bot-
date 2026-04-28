@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingestion — {{ summary.source }}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <div class="admin-title">Ingestion — {{ summary.source }}</div>
+        <nav class="admin-nav">
+          <a class="admin-link" href="/admin/ingestion">Back to documents</a>
+          <a class="admin-link" href="/admin">Admin</a>
+          <a class="admin-link" href="/admin/library">Document Library</a>
+          <a class="admin-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid" style="grid-template-columns: 1fr">
+        <div class="admin-card">
+          <div class="admin-card-title">Summary</div>
+
+          <div class="admin-preview-meta">
+            <span class="pill">Chunks: {{ summary.chunks }}</span>
+            <span class="pill pill-soft">doc_chars={{ summary.doc_chars }}</span>
+            <span class="pill pill-soft">chunk_size={{ summary.chunk_size }}</span>
+            <span class="pill pill-soft">overlap={{ summary.chunk_overlap }}</span>
+            <span class="pill pill-soft">embedder={{ summary.embedder }}</span>
+            <span class="pill pill-soft">vector_size={{ summary.vector_size }}</span>
+          </div>
+
+          <p class="admin-note">
+            Point IDs are computed as <code>hash(source|chunk_index)</code>. This makes re-ingestion overwrite the same points.
+          </p>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Chunks</div>
+
+          <div class="admin-toolbar">
+            <input
+              id="filter"
+              class="input admin-search"
+              type="text"
+              placeholder="Filter by chunk text or point id…"
+              autocomplete="off"
+            />
+            <div class="admin-count">
+              <span class="pill pill-soft">Showing up to {{ summary.max_chunks }} chunks</span>
+            </div>
+          </div>
+
+          {% if chunks|length == 0 %}
+          <p class="admin-p">No chunks were created for this document.</p>
+          {% else %}
+          <div class="admin-table-wrap">
+            <table class="admin-table" aria-label="Chunks">
+              <thead>
+                <tr>
+                  <th style="text-align: right">Chunk</th>
+                  <th style="text-align: right">Range</th>
+                  <th style="text-align: right">Len</th>
+                  <th>Point ID</th>
+                  <th>Preview</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                {% for c in chunks %}
+                <tr>
+                  <td style="text-align: right" class="muted">#{{ c.chunk_index }}</td>
+                  <td style="text-align: right" class="muted">{{ c.chunk_start }}–{{ c.chunk_end }}</td>
+                  <td style="text-align: right" class="muted">{{ c.length }}</td>
+                  <td><code class="admin-code">{{ c.point_id }}</code></td>
+                  <td>
+                    <details class="admin-details">
+                      <summary class="admin-summary">Show</summary>
+                      <pre class="admin-preview"><code>{{ c.text }}</code></pre>
+                    </details>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const input = document.getElementById("filter");
+        const rows = Array.from(document.querySelectorAll("#rows tr"));
+        if (!input) return;
+
+        input.addEventListener("input", () => {
+          const q = (input.value || "").trim().toLowerCase();
+          for (const r of rows) {
+            const text = (r.innerText || "").toLowerCase();
+            r.style.display = !q || text.includes(q) ? "" : "none";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

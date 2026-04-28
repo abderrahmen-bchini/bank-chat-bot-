@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>View — {{ rel }}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <div class="admin-title">{{ rel }}</div>
+        <nav class="admin-nav">
+          <a class="admin-link" href="/admin/library">Back to Library</a>
+          <a class="admin-link" href="/admin">Admin</a>
+          <a class="admin-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid" style="grid-template-columns: 1fr">
+        <div class="admin-card">
+          <div class="admin-card-title">Preview</div>
+          <div class="admin-preview-meta">
+            <span class="pill pill-soft">Updated: {{ mtime }}</span>
+            <span class="pill pill-soft">Size: {{ size_kb }} KB</span>
+            <a class="pill" href="/admin/library/download/{{ rel|urlencode }}">Download</a>
+          </div>
+
+          <pre class="admin-preview"><code>{{ content }}</code></pre>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

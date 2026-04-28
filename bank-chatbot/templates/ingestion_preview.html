@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingestion — Documents</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <div class="admin-title">Ingestion</div>
+        <nav class="admin-nav">
+          <a class="admin-link" href="/admin">Admin</a>
+          <a class="admin-link" href="/admin/library">Document Library</a>
+          <a class="admin-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid" style="grid-template-columns: 1fr">
+        <div class="admin-card">
+          <div class="admin-card-title">Summary</div>
+
+          <div class="admin-preview-meta">
+            <span class="pill">Docs: {{ summary.docs }}</span>
+            <span class="pill">Chunks: {{ summary.chunks }}</span>
+            <span class="pill pill-soft">chunk_size={{ summary.chunk_size }}</span>
+            <span class="pill pill-soft">overlap={{ summary.chunk_overlap }}</span>
+            <span class="pill pill-soft">embedder={{ summary.embedder }}</span>
+            <span class="pill pill-soft">vector_size={{ summary.vector_size }}</span>
+          </div>
+
+          <p class="admin-note">
+            Click a document to see how it will be split into chunks and which <code>point_id</code> values will be upserted.
+          </p>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Documents</div>
+
+          <div class="admin-toolbar">
+            <input
+              id="filter"
+              class="input admin-search"
+              type="text"
+              placeholder="Filter by file name…"
+              autocomplete="off"
+            />
+            <div class="admin-count">
+              <span class="pill pill-soft">Tip: upload/convert files in Admin → Upload & Convert</span>
+            </div>
+          </div>
+
+          {% if docs|length == 0 %}
+          <p class="admin-p">No documents found. Add Markdown files under <strong>data/</strong> and try again.</p>
+          {% else %}
+          <div class="admin-table-wrap">
+            <table class="admin-table" aria-label="Documents">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th style="text-align: right">Chars</th>
+                  <th style="text-align: right">Chunks</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                {% for d in docs %}
+                <tr>
+                  <td>
+                    <div class="file-path">{{ d.source }}</div>
+                    <div class="file-sub muted">/admin/ingestion/doc/{{ d.source }}</div>
+                  </td>
+                  <td style="text-align: right" class="muted">{{ d.chars }}</td>
+                  <td style="text-align: right" class="muted">{{ d.chunks }}</td>
+                  <td>
+                    <a class="admin-btn" href="{{ url_for('admin_ingestion_doc', source=d.source) }}">Open</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const input = document.getElementById("filter");
+        const rows = Array.from(document.querySelectorAll("#rows tr"));
+        if (!input) return;
+
+        input.addEventListener("input", () => {
+          const q = (input.value || "").trim().toLowerCase();
+          for (const r of rows) {
+            const text = (r.innerText || "").toLowerCase();
+            r.style.display = !q || text.includes(q) ? "" : "none";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

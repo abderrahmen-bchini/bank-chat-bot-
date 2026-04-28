@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in — Wifak Assistant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-label="Login">
+        <div class="brand auth-brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="geo" width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#4caf50" />
+                  <stop offset="1" stop-color="#2e7d32" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M14 1.5 18.7 5l6 2.3-2.3 6L26.5 14l-4.1 0.7 2.3 6-6 2.3L14 26.5 9.3 23l-6-2.3 2.3-6L1.5 14l4.1-0.7-2.3-6 6-2.3Z"
+                fill="none"
+                stroke="url(#g)"
+                stroke-width="1.4"
+              />
+              <circle cx="14" cy="14" r="4.8" fill="none" stroke="#c9a84c" stroke-width="1.2" />
+            </svg>
+          </div>
+
+          <div class="brand-text">
+            <div class="brand-name">WIFAK BANK</div>
+            <div class="brand-underline" aria-hidden="true"></div>
+            <div class="brand-subtitle">Assistant Interne • Internal Assistant</div>
+          </div>
+        </div>
+
+        <h1 class="auth-title">Sign in</h1>
+        <p class="auth-hint">Internal access. Use your provided credentials.</p>
+
+        {% if error %}
+        <div class="auth-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form class="auth-form" method="POST" action="/login">
+          <input type="hidden" name="next" value="{{ next }}" />
+
+          <label class="auth-label" for="username">Username</label>
+          <input class="input" id="username" name="username" type="text" autocomplete="username" required />
+
+          <label class="auth-label" for="password">Password</label>
+          <input class="input" id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button class="send auth-btn" type="submit">Sign in</button>
+        </form>
+
+        <div class="auth-footer">Wifak Bank • Internal Tool</div>
+      </section>
+    </main>
+  </body>
+</html>

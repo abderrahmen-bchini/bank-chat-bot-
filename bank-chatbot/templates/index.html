@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wifak Assistant — Internal Bank Chatbot</title>
+
+    <!-- Google Fonts (Brand typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar">
+        <div class="brand" aria-label="Wifak Bank branding">
+          <div class="brand-mark" aria-hidden="true">
+            <!-- Decorative Islamic geometric element (inline SVG) -->
+            <svg class="geo" width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#4caf50" />
+                  <stop offset="1" stop-color="#2e7d32" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M14 1.5 18.7 5l6 2.3-2.3 6L26.5 14l-4.1 0.7 2.3 6-6 2.3L14 26.5 9.3 23l-6-2.3 2.3-6L1.5 14l4.1-0.7-2.3-6 6-2.3Z"
+                fill="none"
+                stroke="url(#g)"
+                stroke-width="1.4"
+              />
+              <circle cx="14" cy="14" r="4.8" fill="none" stroke="#c9a84c" stroke-width="1.2" />
+            </svg>
+          </div>
+
+          <div class="brand-text">
+            <div class="brand-name">WIFAK BANK</div>
+            <div class="brand-underline" aria-hidden="true"></div>
+            <div class="brand-subtitle">Assistant Interne • Internal Assistant</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="topics" aria-label="Quick topics">
+          <!--
+            Professional look: no emoji icons.
+            JS will localize the label + send a language-specific prompt.
+          -->
+          <button class="topic-btn" data-topic="onboarding">Onboarding</button>
+          <button class="topic-btn" data-topic="leave">Leave Policy</button>
+          <button class="topic-btn" data-topic="it">IT Support</button>
+          <button class="topic-btn" data-topic="payroll">Payroll</button>
+          <button class="topic-btn" data-topic="compliance">Compliance & KYC</button>
+          <button class="topic-btn" data-topic="credit">Credit & Financing</button>
+          <button class="topic-btn" data-topic="islamic">Islamic Finance</button>
+        </div>
+
+        <div class="sidebar-footer">v1.0 — Wifak Bank © 2025</div>
+      </aside>
+
+      <!-- RIGHT CHAT AREA -->
+      <main class="chat">
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="topbar-title">Wifak Assistant</div>
+            <div class="presence" aria-label="Online">
+              <span class="online-dot"></span>
+              <span class="online-text">Online</span>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <a class="topbar-link" href="/admin">Admin</a>
+            <a class="topbar-link" href="/logout">Logout</a>
+
+            <label class="control" for="langSelect">Language</label>
+            <select id="langSelect" class="select" aria-label="Language selector">
+              <option value="en" selected>English</option>
+              <option value="fr">Français</option>
+              <option value="ar">العربية</option>
+            </select>
+          </div>
+        </header>
+
+        <section class="history" id="chatHistory" aria-label="Chat message history">
+          <!-- Initial bot message -->
+          <div class="message bot new">
+            <div class="avatar bot" aria-hidden="true">W</div>
+            <div class="bubble">
+              <div class="meta">
+                <span class="name">Wifak Assistant</span>
+                <span class="time">{{ now }}</span>
+              </div>
+              <div class="content">
+                <p>
+                  Hello. I'm your internal assistant. Choose a topic on the left or ask a question.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Typing indicator (hidden by default; toggled via JS) -->
+          <div class="message bot typing" id="typingIndicator" hidden>
+            <div class="avatar bot" aria-hidden="true">W</div>
+            <div class="bubble">
+              <div class="meta">
+                <span class="name">Wifak Assistant</span>
+                <span class="time">…</span>
+              </div>
+              <div class="content">
+                <div class="typing-dots" aria-label="Bot is typing">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="composer">
+          <input
+            id="messageInput"
+            class="input"
+            type="text"
+            placeholder="Type a message... (e.g., VPN, leave request, KYC)"
+            autocomplete="off"
+          />
+          <button id="sendBtn" class="send" type="button">Send</button>
+        </footer>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  </body>
+</html>
