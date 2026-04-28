@@ -25,7 +25,7 @@ def start_chat_bot():
         rag_prompt = f"""
         you are a helpful assistant.
         use the context below if it is relevant to the question.
-        if the context is not useful or soes not contain teh anwser, answer using your general knowledge.
+        if the context is not useful or does not contain the anwser, answer using your general knowledge.
         Context:
         {context}
         Question:
