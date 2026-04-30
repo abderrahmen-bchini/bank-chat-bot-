@@ -13,3 +13,8 @@ COLLECTION_NAME = "rag_collection"
 # Embedding model config
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 VECTOR_SIZE = 384  # IMPORTANT (must match model)
+
+#Data Locations 
+DATA_INPUT_PATH = "/home/zlk/github/bank-chat-bot-/data/"
+DATA_OUTPUT_PATH = "/home/zlk/github/bank-chat-bot-/data/"
+
