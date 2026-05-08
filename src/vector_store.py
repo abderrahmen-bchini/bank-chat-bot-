@@ -7,7 +7,7 @@ from qdrant_client.http.models import PointStruct
 from sentence_transformers import SentenceTransformer
 
 def embed_database():
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(host="qdrant", port=6333)
     model = SentenceTransformer(f"sentence-transformers/{EMBEDDING_MODEL}")
 
 # load and split
@@ -43,13 +43,13 @@ def embed_database():
 
 
 def create_qdrant_collection():
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(host="qdrant", port=6333)
     vector_params = models.VectorParams(size=VECTOR_SIZE,distance=models.Distance.COSINE)
     client.create_collection(collection_name=COLLECTION_NAME , vectors_config=vector_params)
     if client.collection_exists(COLLECTION_NAME) :
         print ("collection has been created ")
 def check_database(): 
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(host="qdrant", port=6333)
     if client.collection_exists(COLLECTION_NAME) : 
         return True 
     else : 

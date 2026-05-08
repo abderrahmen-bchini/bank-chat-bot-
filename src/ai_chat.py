@@ -5,9 +5,9 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer 
 from config import EMBEDDING_MODEL , COLLECTION_NAME
 def start_chat_bot(): 
-    load_dotenv("/home/zlk/github/bank-chat-bot-/.env")
+    load_dotenv()
     llm = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    qdrant = QdrantClient(host="localhost" , port=6333)
+    qdrant = QdrantClient(host="qdrant" , port=6333)
     embedder = SentenceTransformer(f"sentence-transformers/{EMBEDDING_MODEL}")
     messages = [{"role": "system" , "content" : "you are a helpful assistant" "Answer using the provided context when relevant" "if the context does not contain the answer , say so " }]
 
