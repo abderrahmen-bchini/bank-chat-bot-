@@ -3,6 +3,8 @@ services :
     build : . 
     depends_on : 
       - qdrant 
+    stdin_open: true
+    tty: true
   qdrant : 
     image : qdrant/qdrant 
     ports : 
