@@ -1,7 +1,7 @@
 from langchain_core.documents import Document
 from pathlib import Path
 
-DATA_PATH = "/home/zlk/github/bank-chat-bot-/data/"
+DATA_PATH = "data/"
 
 def load_documents():
     documents = []

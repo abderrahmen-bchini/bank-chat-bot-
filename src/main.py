@@ -5,7 +5,7 @@ from qdrant_client import AsyncQdrantClient, models
 import os 
 import asyncio
 
-async def check_points(client: AsyncQdrantClient , collection_name: str , file_path: str = "expected_points.txt"):
+async def check_points(client: AsyncQdrantClient , collection_name: str , file_path: str = "src/expected_points.txt"):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"{file_path} not found ")
     with open(file_path , "r") as f :
@@ -18,7 +18,7 @@ async def check_points(client: AsyncQdrantClient , collection_name: str , file_p
     else : 
         return False 
 async def update_expected_points() : 
-    client = AsyncQdrantClient(host="localhost" , port=6333)
+    client = AsyncQdrantClient(host="qdrant" , port=6333)
     count = await client.count(collection_name=COLLECTION_NAME , exact=True)
     count = count.count 
     with open("expected_points.txt" , "w") as f :
@@ -29,7 +29,7 @@ async def main():
 # we need to check if the database exists 
     if not(check_database()):
         create_qdrant_collection()
-    client = AsyncQdrantClient(host="localhost" , port=6333)
+    client = AsyncQdrantClient(host="qdrant" , port=6333)
     check = await check_points(client , COLLECTION_NAME)
     if not(check) : 
         embed_database()
