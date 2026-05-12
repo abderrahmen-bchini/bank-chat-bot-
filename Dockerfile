@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y build-essential tesseract-ocr tesseract
 
 RUN pip install --timeout=1000 torch --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install -r requirements.txt 
+RUN pip install --default-timeout=1000 -r requirements.txt
 
 RUN pip list 
 
