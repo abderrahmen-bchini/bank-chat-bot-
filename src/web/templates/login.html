@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in — Wifak Assistant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-label="Login">
+        <div class="brand auth-brand">
+          <img class="brand-logo" src="{{ url_for('static', filename='img/wifak-logo.png') }}" alt="Wifak Bank logo" />
+        </div>
+
+        <h1 class="auth-title">Sign in</h1>
+        <p class="auth-hint">Internal access. Use your provided credentials.</p>
+
+        {% if error %}
+        <div class="auth-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form class="auth-form" method="POST" action="/login">
+          <input type="hidden" name="next" value="{{ next }}" />
+
+          <label class="auth-label" for="username">Username</label>
+          <input class="input" id="username" name="username" type="text" autocomplete="username" required />
+
+          <label class="auth-label" for="password">Password</label>
+          <input class="input" id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button class="send auth-btn" type="submit">Sign in</button>
+        </form>
+
+        <div class="auth-footer">Wifak Bank • Internal Tool</div>
+      </section>
+    </main>
+  </body>
+</html>

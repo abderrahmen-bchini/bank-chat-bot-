@@ -69,11 +69,11 @@ git clone https://github.com/abderrahmen-bchini/bank-chat-bot-.git
 cd bank-chat-bot-
 
 cp .env.example .env
-docker-compose up -d
+docker compose up --build
 
-# Services available at ( not available yet ):
-# API: http://localhost:8000
-# Frontend: http://localhost:3000
+# Services available at:
+# Web chat interface: http://localhost:5000
+# Admin panel: http://localhost:5000/admin (default login: admin / admin123)
 # Qdrant: http://localhost:6333/dashboard
 ```
 

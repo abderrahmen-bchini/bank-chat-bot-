@@ -6,8 +6,11 @@ from qdrant_client.http import models
 from qdrant_client.http.models import PointStruct
 from sentence_transformers import SentenceTransformer
 
+def _qdrant_client():
+    return QdrantClient(host="qdrant", port=6333, timeout=QDRANT_TIMEOUT_SECONDS)
+
 def embed_database():
-    client = QdrantClient(host="qdrant", port=6333)
+    client = _qdrant_client()
     model = SentenceTransformer(f"sentence-transformers/{EMBEDDING_MODEL}")
 
 # load and split
@@ -40,17 +43,24 @@ def embed_database():
     )
 
     print(f"Inserted {len(points)} points into Qdrant")
+    return len(points)
 
 
 def create_qdrant_collection():
-    client = QdrantClient(host="qdrant", port=6333)
+    client = _qdrant_client()
     vector_params = models.VectorParams(size=VECTOR_SIZE,distance=models.Distance.COSINE)
     client.create_collection(collection_name=COLLECTION_NAME , vectors_config=vector_params)
     if client.collection_exists(COLLECTION_NAME) :
         print ("collection has been created ")
 def check_database(): 
-    client = QdrantClient(host="qdrant", port=6333)
+    client = _qdrant_client()
     if client.collection_exists(COLLECTION_NAME) : 
         return True 
     else : 
         return False 
+
+
+def count_points():
+    client = _qdrant_client()
+    result = client.count(collection_name=COLLECTION_NAME, exact=True)
+    return int(result.count)

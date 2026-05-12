@@ -3,8 +3,11 @@ services :
     build : . 
     depends_on : 
       - qdrant 
+    command: python src/web_app.py
     stdin_open: true
     tty: true
+    ports:
+      - 5000:5000
   qdrant : 
     image : qdrant/qdrant 
     ports : 

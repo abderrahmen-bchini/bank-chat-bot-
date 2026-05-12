@@ -4,9 +4,7 @@ WORKDIR /rag_app
 
 COPY . . 
 
-RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
-
-# RUN apt-get install -y tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng
+RUN apt-get update && apt-get install -y build-essential tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --timeout=1000 torch --index-url https://download.pytorch.org/whl/cpu
 
