@@ -1,369 +1,284 @@
-# Bank Chatbot - Internal Knowledge Assistant
+# Wifak Assistant — Internal Bank Chatbot
 
-Intelligent chatbot system for Wifak Bank to assist employees with internal procedures, policies, and processes through natural language question answering.
+An on-premise RAG (Retrieval-Augmented Generation) chatbot for Wifak Bank employees. Ask questions in plain language and get accurate answers drawn directly from the bank's internal policy and procedure documents — no external data leaves the organisation.
 
-Capstone Project | Software Engineering Degree
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Architecture](#architecture)
-- [Sprints](#sprints)
-- [Contributing](#contributing)
-- [Team](#team)
+> Capstone Project — Software Engineering Degree, MUST University (Feb – Jun 2026)
 
 ---
 
-## Overview
+## Preview
 
-### Problem
-Bank employees struggle to find information across multiple documentation sources, resulting in inefficiency and time waste. No centralized system exists to answer questions about bank procedures and policies.
+> Screenshots below show the live application. Replace the placeholder paths with real captures once the app is running.
 
-### Solution
-A Retrieval-Augmented Generation (RAG) chatbot that:
-- Ingests PDF/DOCX/TXT documents
-- Generates embeddings locally for semantic search
-- Provides accurate answers with source citations
-- Enforces role-based access control
-- Maintains audit logs for compliance
+| Chat Interface | Admin Panel |
+|:-:|:-:|
+| ![Chat UI](docs/screenshots/chat.png) | ![Admin Panel](docs/screenshots/admin.png) |
 
-### Key Features
+| Document Library | Ingestion Preview |
+|:-:|:-:|
+| ![Library](docs/screenshots/library.png) | ![Ingestion](docs/screenshots/ingestion.png) |
 
-- Document ingestion pipeline
-- Semantic search and retrieval
-- Natural language question answering
-- Source attribution
-- Role-based access control
-- On-premise deployment
-- Query audit logging
+> **To add your own screenshots:** run the app, capture the pages, and save them under `docs/screenshots/`.
 
 ---
 
-## Tech Stack
+## Features
 
-| Component | Technology |
-|-----------|-----------|
-| Backend | FastAPI (Python 3.10+) |
-| Frontend | React 18 |
-| Vector Database | Qdrant |
-| Embeddings | Sentence-BERT (local) |
-| Language Model | Ollama with Mistral/Llama 2 / Groq / openai  |
-| Metadata Database | Qdrant |
-| Authentication | JWT + RBAC |
-| Deployment | Docker Compose |
-
----
-
-## Quick Start
-
-### Using Docker Compose (Recommended)
-
-```bash
-git clone https://github.com/abderrahmen-bchini/bank-chat-bot-.git
-cd bank-chat-bot-
-
-cp .env.example .env
-docker compose up --build
-
-# Services available at:
-# Web chat interface: http://localhost:5000
-# Admin panel: http://localhost:5000/admin (default login: admin / admin123)
-# Qdrant: http://localhost:6333/dashboard
-```
-
----
-
-## Project Structure
-
-```
-``.
-├── data
-├── docs
-│   ├── API.md
-│   ├── ARCHITECTURE.md
-│   ├── guides
-│   ├── project
-│   ├── README.md
-│   └── templates
-├── main.py
-├── README.md
-├── requirements.txt
-├── src
-│   ├── config.py
-│   ├── embeddings.py
-│   ├── loader.py
-│   ├── __pycache__
-│   ├── splitter.py
-│   ├── test_embeddings.py
-│   ├── test.py
-│   ├── test_qdrant.py
-│   └── vector_store.py
-└── venv
-    ├── bin
-    ├── include
-    ├── lib
-    ├── lib64 -> lib
-    ├── pyvenv.cfg
-    └── share`
+- **Natural language Q&A** over internal bank documents
+- **Document ingestion** — upload PDF, DOCX, TXT, or images (OCR) via the admin panel; they are automatically converted to Markdown and indexed
+- **Semantic search** using locally generated embeddings (no external embedding API)
+- **Source-grounded answers** — the LLM is only given retrieved context, reducing hallucination
+- **Admin panel** — system status, one-click re-indexing, document library, ingestion preview with chunk-level inspection
+- **Session-based admin auth** — username/password protected admin routes
+- **On-premise deployment** — all embedding runs locally; only the final LLM call goes to Groq's API
+- **One-command Docker deployment**
 
 ---
 
 ## Architecture
 
-### System Components
+```
+┌─────────────────────────────────────────────────────────┐
+│                        Browser                          │
+│         Chat UI  (/）           Admin Panel (/admin)    │
+└────────────────┬────────────────────────┬───────────────┘
+                 │  HTTP                  │  HTTP
+┌────────────────▼────────────────────────▼───────────────┐
+│              Flask Web App  (src/web_app.py)             │
+│                                                         │
+│  POST /chat          →  ai_chat.get_chat_response()     │
+│  POST /admin/upload  →  document_ingestion + embed      │
+│  POST /admin/ingest  →  vector_store.embed_database()   │
+└──────────┬──────────────────────────────┬───────────────┘
+           │                              │
+┌──────────▼──────────┐      ┌────────────▼──────────────┐
+│  Sentence-BERT      │      │  Qdrant Vector DB          │
+│  all-MiniLM-L6-v2   │      │  Collection: rag_collection│
+│  (runs locally)     │      │  Vector size: 384          │
+└──────────┬──────────┘      └────────────┬──────────────┘
+           │  embed query                 │  top-5 results
+           └──────────────────────────────┘
+                          │
+               ┌──────────▼──────────┐
+               │  Groq API           │
+               │  llama-3.3-70b-     │
+               │  versatile          │
+               └─────────────────────┘
+```
 
-- **API Layer**: FastAPI for request handling and routing
-- **Ingestion**: Document parsing, text cleaning, chunking, embedding generation
-- **Retrieval**: Vector similarity search with Qdrant
-- **Generation**: LLM context injection and answer generation
-- **Auth**: JWT-based authentication with role-based access
-
-### Data Flow
+### Document Ingestion Flow
 
 ```
-User Query → Validate → Embed → Search Qdrant → Filter by Role 
-→ Build Prompt → Call LLM → Validate → Return with Citations → Log
+Upload (PDF / DOCX / TXT / PNG / JPG)
+         │
+         ▼
+  document_ingestion.py          ← converts to Markdown
+         │
+         ▼
+     data/ingested/*.md
+         │
+         ▼
+     loader.py                   ← reads all *.md under data/
+         │
+         ▼
+     splitter.py                 ← 500-char chunks, 50-char overlap
+         │
+         ▼
+  sentence-transformers           ← 384-dimensional vectors
+         │
+         ▼
+     Qdrant upsert               ← stores text + source metadata
 ```
-
 
 ---
 
-## Sprints
-
-### Sprint 1: Infrastructure & Setup
-Complete
-- US-01: GitHub repo with branching strategy
-- US-02: Notion documentation pipeline
-- US-03: System architecture
-
-### Sprint 2: Document Ingestion Pipeline
-In Progress
-- US-04: File upload (PDF/DOCX/TXT)
-- US-05: Text extraction & cleaning
-- US-06: Document chunking
-- US-07: Embedding generation
-- US-08: Qdrant storage
-
-### Sprint 3: RAG & Q&A System
-Planned
-- US-09: Natural language Q&A
-- US-10: Query embedding & search
-- US-11: Context injection
-- US-12: Hallucination check
-- US-13: Source citations
-
-### Sprint 4: Auth & Security
-Planned
-- US-14: User authentication
-- US-15: Role-based access
-- US-16: Audit logging
-- US-17: On-premise deployment
-
-### Sprint 5: UI & Deployment
-Planned
-- US-18: Web interface
-- US-19: Admin panel
-- US-20: One-command deployment
-- US-21: Performance testing
-
-
----
-
-## Git Workflow
-
-### Why We Use Branches
-
-We protect `main` by requiring all code to go through feature branches and pull requests:
-- Prevents untested code reaching production
-- Ensures peer review before merging
-- Allows parallel work on multiple features
-- Maintains code quality and traceability
-
-### Branching Strategy
+## Folder Structure
 
 ```
-main              ← Production-ready (protected)
-abderrahmen              ← Abderrahmen Bchini branch  
-yassine              ← Yassine Ncib Branch  
-
+bank-chat-bot-/
+├── data/                        # Document storage (git-ignored)
+│   └── ingested/                # Markdown output from uploads
+├── docs/
+│   ├── screenshots/             # Add your screenshots here
+│   ├── ARCHITECTURE.md
+│   ├── API.md
+│   └── guides/
+├── src/
+│   ├── web/
+│   │   ├── templates/           # Jinja2 HTML templates
+│   │   │   ├── index.html       # Chat UI
+│   │   │   ├── admin.html       # Admin dashboard
+│   │   │   ├── library.html     # Document library
+│   │   │   └── ingestion_*.html # Chunk inspector
+│   │   └── static/
+│   │       ├── css/style.css
+│   │       ├── js/chat.js
+│   │       └── img/
+│   ├── web_app.py               # Flask app — main entry point
+│   ├── ai_chat.py               # RAG query + Groq LLM call
+│   ├── vector_store.py          # Qdrant create / upsert / count
+│   ├── document_ingestion.py    # File-to-Markdown conversion
+│   ├── loader.py                # Load *.md files into LangChain docs
+│   ├── splitter.py              # Chunk documents
+│   └── config.py                # Central config (reads .env)
+├── .env.example                 # Environment variable template
+├── docker-compose.yml
+├── Dockerfile
+└── requirements.txt
 ```
 
-### Using GitHub Desktop (Yassine Ncib)
+---
 
-use **GitHub Desktop** for branch management:
+## RAG Pipeline
 
-1. **Create branch**: Current Branch → New Branch → Name → Create
-2. **Make changes**: Edit files → Commit → Push origin
-3. **Create PR**: After push → Create Pull Request
-4. **Review & Merge**: Team reviews → Squash and merge
- 
-### Using remote access fron the terminal (Abderrahmen Bchini)
+**Retrieval-Augmented Generation** grounds every answer in documents retrieved from the vector store, rather than relying on the model's training data alone.
 
-using the **terminal** for branch management:
-
-1. **Create branch**: git checkout -b branch-name 
-2. **Make changes**:
-    git add . 
-    git commint -m "your message"
-    git push -u origin branch-name 
-3. **Create Pull Request **: After push → Create a pull request on GitHub 
-4. **Review & Merge**: Team reviews → Squash and merge
-
-### Commit Convention
-
-```
-docs: description
-```
-
-### Pull Request Process (in work)
-
-1. Create feature branch from `develop`
-2. Implement changes with tests
-3. Push to origin
-4. Create PR on GitHub
-5. Link issue: `Closes #XX`
-6. Request review
-7. After approval: squash and merge
+1. **Ingest** — internal documents are uploaded, converted to Markdown, chunked into 500-character segments, and embedded with Sentence-BERT.
+2. **Store** — each chunk's embedding and its raw text are stored as a Qdrant point.
+3. **Query** — the user's question is embedded with the same model, and the 5 most similar chunks are retrieved by cosine similarity.
+4. **Generate** — the retrieved chunks are injected as context into a prompt sent to the LLM. The model is instructed to answer only from the provided context.
+5. **Respond** — the answer is returned to the user in the chat interface.
 
 ---
 
+## Embedding Model
 
-## Documentation
+| Property | Value |
+|----------|-------|
+| Model | `sentence-transformers/all-MiniLM-L6-v2` |
+| Runs | Locally inside the Docker container (no API call) |
+| Vector size | **384** — this must match `VECTOR_SIZE` in `config.py` |
+| Distance metric | Cosine similarity |
 
-
-- [Quick Start](docs/guides/QUICKSTART.md) — Setup and run locally
-- [Architecture](docs/ARCHITECTURE.md) — System design
-- [API Reference](docs/API.md) — REST API endpoints
-- [Product Backlog](docs/project/BACKLOG.md) — User stories and sprints
-- [GitHub Desktop Guide](docs/guides/GITHUB_DESKTOP.md) — Branching and PR workflow
-- [GitHub Setup](docs/guides/GITHUB_SETUP.md) — Repository configuration
-
-Additional:
-- [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
-
----
-## 📊 Sprints & Progress
-
-### Epic 1: Infrastructure & Setup ✅ **SPRINT 1 — DONE**
-- [x] US-01: GitHub repo with branching strategy
-- [x] US-02: Notion documentation pipeline
-- [x] US-03: System architecture definition
-
-### Epic 2: Document Ingestion Pipeline 🟡 **SPRINT 2 — IN PROGRESS**
-- [ ] US-04: PDF/DOCX/TXT file upload
-- [ ] US-05: Text extraction & cleaning
-- [ ] US-06: Document chunking
-- [ ] US-07: Embedding generation
-- [ ] US-08: Qdrant storage integration
-
-### Epic 3: RAG & Q&A System ⏳ **SPRINT 3 — PLANNED**
-- [ ] US-09: Natural language Q&A
-- [ ] US-10: Query embedding & semantic search
-- [ ] US-11: Context injection into LLM
-- [ ] US-12: Hallucination check
-- [ ] US-13: Source citation
-
-### Epic 4: Auth & Security ⏳ **SPRINT 4 — PLANNED**
-- [ ] US-14: User login & authentication
-- [ ] US-15: Role-based access control
-- [ ] US-16: Query/access audit logging
-- [ ] US-17: On-premise, zero external APIs
-
-### Epic 5: UI & Deployment ⏳ **SPRINT 5 — PLANNED**
-- [ ] US-18: Web interface for Q&A
-- [ ] US-19: Admin document management panel
-- [ ] US-20: One-command local deployment
-- [ ] US-21: Performance testing & docs
+> **Important:** if you change the embedding model you must drop the existing Qdrant collection and re-index all documents, because the vector dimensions will differ.
 
 ---
 
-## 🔄 Git Workflow
+## Installation
 
-### Branching Strategy (Git Flow)
-```
-main               ← Production-ready only
-├── develop        ← Integration branch
-│   ├── feature/US-04-pdf-upload
-│   ├── feature/US-05-text-extraction
-│   ├── fix/bug-embedding-timeout
-│   └── ...
+### Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| Docker & Docker Compose | Version 20+ recommended |
+| Groq API key | Free at [console.groq.com](https://console.groq.com) |
+| 4 GB RAM minimum | The embedding model loads fully into memory |
+| Internet access (first run) | Docker pulls the Qdrant image and downloads the embedding model on first start |
+
+> **No Python installation is needed** when using Docker. For local (non-Docker) setup see below.
+
+---
+
+### Option A — Docker (recommended)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/abderrahmen-bchini/bank-chat-bot-.git
+cd bank-chat-bot-
+
+# 2. Create your environment file
+cp .env.example .env
 ```
 
-### Branch Naming
-- **Features**: `feature/US-XX-short-description`
-- **Fixes**: `fix/short-description`
-- **Docs**: `docs/short-description`
-- **Hotfixes**: `hotfix/short-description`
+Open `.env` and set at minimum:
 
-### Commit Convention
-```
-feat(ingestion): add PDF text extraction module
-fix(api): resolve timeout on large document uploads
-docs(readme): add local setup instructions
-test(retrieval): add Qdrant search tests
-
-Prefixes: feat, fix, docs, test, refactor, chore
+```env
+GROQ_API_KEY=gsk_...          # your Groq key
+FLASK_SECRET_KEY=change-me    # any random string
+ADMIN_USERNAME=admin          # admin panel login
+ADMIN_PASSWORD=admin123       # admin panel password
 ```
 
-### Pull Request Process
-1. Create feature branch from `develop`
-2. Make changes & commit
-3. Push & create PR with title: `[US-XX] Short Description`
-4. Link the related GitHub Issue
-5. Get at least 1 team member review
-6. Squash & merge to `develop`
-7. After sprint, merge `develop` → `main`
+```bash
+# 3. Build and start all services
+docker compose up --build
+```
+
+Services started:
+| Service | URL |
+|---------|-----|
+| Chat interface | http://localhost:5000 |
+| Admin panel | http://localhost:5000/admin |
+| Qdrant dashboard | http://localhost:6333/dashboard |
+
+On first start the app automatically creates the Qdrant collection and indexes any Markdown files found in `data/`. Subsequent starts only re-index if the point count has changed.
 
 ---
 
-## 📝 Contributing
+### Option B — Local (without Docker)
 
+**Additional prerequisites:** Python 3.10+, a running Qdrant instance, and `qdrant` resolvable as a hostname (add `127.0.0.1 qdrant` to `/etc/hosts` or change the host values in `vector_store.py` and `ai_chat.py` to `localhost`).
 
-### Quick Checklist
-- [ ] Fork and create a feature branch
-- [ ] Write tests for new features
-- [ ] Follow commit message convention
-- [ ] Submit PR with issue reference
-- [ ] Wait for review approval
+```bash
+# 1. Start Qdrant separately
+docker run -p 6333:6333 qdrant/qdrant
 
----
+# 2. Install dependencies
+pip install -r requirements.txt
 
-## 👥 Team
+# 3. Set environment variables (or populate .env)
+export GROQ_API_KEY=gsk_...
+export FLASK_SECRET_KEY=change-me
 
-| Role | Name | Email |
-|------|------|-------|
-| Project Lead | Abderrahmen | abderrahmen.bchini@musteducation.tn |
-| Backend | Abderrahmen | abderrahmen.bchini@musteducation.tn |
-| Frontend | Yassine | mohamedyassine.ncib@musteducation.tn |
-| DevOps | Abderrahmen , Yassine |  abderrahmen.bchini@musteducation.tn , mohamedyassine.ncib@musteducation.tn|
-| Supervisor | Naoufel Kraiem | no email |
-
-**University**: MUST University 
-**Department**: Software Engineering  
-**Period**: Feb 2026 , June 2026
-
+# 4. Run the app
+python src/web_app.py
+```
 
 ---
 
-## 📚 Documentation
+## Usage
 
-- **[Architecture](docs/ARCHITECTURE.md)** — System design & components
-- **[API Reference](docs/API.md)** — Backend endpoints
-- **[Deployment Guide](docs/DEPLOYMENT.md)** — Production setup
-- **[Development Setup](CONTRIBUTING.md)** — How to set up dev environment
+### Chatting
+
+1. Open http://localhost:5000.
+2. Type a question in the input bar, or click one of the quick-topic buttons (Onboarding, Leave Policy, IT Support, etc.).
+3. The assistant retrieves relevant chunks from the indexed documents and returns a grounded answer.
+
+### Uploading documents (Admin)
+
+1. Go to http://localhost:5000/admin and log in.
+2. Under **Documents**, choose one or more files (PDF, DOCX, TXT, PNG, JPG).
+3. Tick **Index immediately** to convert and embed in one step, or upload first and click **Re-index** later.
+4. Use **Document Library** to browse and preview converted Markdown files.
+5. Use **Ingestion Preview** to inspect how each document is split into chunks before embedding.
+
+### Re-indexing
+
+Click **Re-index** on the admin dashboard to re-embed all documents currently in `data/`. This is necessary after manually adding or editing files in the `data/` folder outside the upload form.
 
 ---
 
-## ⚖️ License
+## Screenshots
 
-This project is the intellectual property of Abderrahmen Bchini & Yassine Ncib For educational use only and it cannot be used for commerical use without the permission of the repo owner .
+> Replace the images below with actual captures from your running instance. Save screenshots to `docs/screenshots/`.
+
+**Chat interface** — employees ask questions and receive answers grounded in bank documents.
+
+```
+docs/screenshots/chat.png
+```
+
+**Admin dashboard** — shows Qdrant status, point counts, and upload controls.
+
+```
+docs/screenshots/admin.png
+```
+
+**Document library** — browse all indexed Markdown files, view or download them.
+
+```
+docs/screenshots/library.png
+```
+
+**Ingestion preview** — inspect chunk boundaries and point IDs before committing to the index.
+
+```
+docs/screenshots/ingestion.png
+```
 
 ---
-**Last Updated**: April 2026 
-**Project Status**: Sprint 2 - Document Ingestion Pipeline
+
+## License
+
+This project is the intellectual property of **Abderrahmen Bchini** and **Yassine Ncib**.
+For educational use only. Commercial use requires written permission from the repository owner.
