@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Library — Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Raleway:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <div class="admin-title">Document Library</div>
+        <nav class="admin-nav">
+          <a class="admin-link" href="/admin">Admin</a>
+          <a class="admin-link" href="/">Chat</a>
+          <a class="admin-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid" style="grid-template-columns: 1fr">
+        <div class="admin-card">
+          <div class="admin-card-title">Files</div>
+          <div class="admin-toolbar">
+            <input
+              id="filter"
+              class="input admin-search"
+              type="text"
+              placeholder="Search by name/path…"
+              autocomplete="off"
+            />
+            <div class="admin-count">
+              <span class="pill">Total: {{ files|length }}</span>
+              <span class="pill pill-soft">Ingested: {{ ingested_count }}</span>
+            </div>
+          </div>
+
+          {% if files|length == 0 %}
+          <p class="admin-p">No Markdown files found under <strong>data/</strong>.</p>
+          {% else %}
+          <div class="admin-table-wrap">
+            <table class="admin-table" aria-label="Document library">
+              <thead>
+                <tr>
+                  <th>Path</th>
+                  <th>Updated</th>
+                  <th style="text-align: right">Size</th>
+                  <th style="text-align: right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                {% for f in files %}
+                <tr>
+                  <td>
+                    <div class="file-path">{{ f.rel }}</div>
+                    {% if f.is_ingested %}
+                    <div class="file-sub">Converted upload</div>
+                    {% else %}
+                    <div class="file-sub">Project document</div>
+                    {% endif %}
+                  </td>
+                  <td class="muted">{{ f.mtime }}</td>
+                  <td style="text-align: right" class="muted">{{ f.size_kb }} KB</td>
+                  <td style="text-align: right">
+                    <a class="admin-btn" href="/admin/library/view/{{ f.rel|urlencode }}">View</a>
+                    <a class="admin-btn admin-btn-ghost" href="/admin/library/download/{{ f.rel|urlencode }}">Download</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          <p class="admin-note" style="margin-top: 12px">
+            Tip: uploads are converted to <strong>data/ingested/</strong>. After adding files, run <strong>Ingestion</strong> to index them.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const input = document.getElementById("filter");
+        const rows = Array.from(document.querySelectorAll("#rows tr"));
+        if (!input) return;
+
+        input.addEventListener("input", () => {
+          const q = (input.value || "").trim().toLowerCase();
+          for (const r of rows) {
+            const text = (r.innerText || "").toLowerCase();
+            r.style.display = !q || text.includes(q) ? "" : "none";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

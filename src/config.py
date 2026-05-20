@@ -9,6 +9,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # Qdrant config
 QDRANT_URL = "http://localhost:6333"
 COLLECTION_NAME = "rag_collection"
+QDRANT_TIMEOUT_SECONDS = int(os.getenv("QDRANT_TIMEOUT_SECONDS", "120"))
 
 # Embedding model config
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
