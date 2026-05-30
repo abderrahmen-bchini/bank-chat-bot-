@@ -18,7 +18,10 @@ async def check_points(client: AsyncQdrantClient , collection_name: str , file_p
     else : 
         return False 
 async def update_expected_points() : 
-    client = AsyncQdrantClient(host="qdrant" , port=6333)
+    kwargs = {"url": QDRANT_URL}
+    if QDRANT_API_KEY:
+        kwargs["api_key"] = QDRANT_API_KEY
+    client = AsyncQdrantClient(**kwargs)
     count = await client.count(collection_name=COLLECTION_NAME , exact=True)
     count = count.count 
     with open("expected_points.txt" , "w") as f :
@@ -29,7 +32,10 @@ async def main():
 # we need to check if the database exists 
     if not(check_database()):
         create_qdrant_collection()
-    client = AsyncQdrantClient(host="qdrant" , port=6333)
+    kwargs = {"url": QDRANT_URL}
+    if QDRANT_API_KEY:
+        kwargs["api_key"] = QDRANT_API_KEY
+    client = AsyncQdrantClient(**kwargs)
     check = await check_points(client , COLLECTION_NAME)
     if not(check) : 
         embed_database()

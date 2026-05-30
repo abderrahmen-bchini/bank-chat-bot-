@@ -24,6 +24,7 @@ An on-premise RAG (Retrieval-Augmented Generation) chatbot for Wifak Bank employ
 
 ## Features
 
+<<<<<<< HEAD
 - **Natural language Q&A** over internal bank documents
 - **Document ingestion** — upload PDF, DOCX, TXT, or images (OCR) via the admin panel; they are automatically converted to Markdown and indexed
 - **Semantic search** using locally generated embeddings (no external embedding API)
@@ -32,6 +33,98 @@ An on-premise RAG (Retrieval-Augmented Generation) chatbot for Wifak Bank employ
 - **Session-based admin auth** — username/password protected admin routes
 - **On-premise deployment** — all embedding runs locally; only the final LLM call goes to Groq's API
 - **One-command Docker deployment**
+=======
+### Problem
+Bank employees struggle to find information across multiple documentation sources, resulting in inefficiency and time waste. No centralized system exists to answer questions about bank procedures and policies.
+
+### Solution
+A Retrieval-Augmented Generation (RAG) chatbot that:
+- Ingests PDF/DOCX/TXT documents
+- Generates embeddings locally for semantic search
+- Provides accurate answers with source citations
+- Enforces role-based access control
+- Maintains audit logs for compliance
+
+### Key Features
+
+- Document ingestion pipeline
+- Semantic search and retrieval
+- Natural language question answering
+- Source attribution
+- Role-based access control
+- On-premise deployment
+- Query audit logging
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend | FastAPI (Python 3.10+) |
+| Frontend | React 18 |
+| Vector Database | Qdrant |
+| Embeddings | Sentence-BERT (local) |
+| Language Model | Ollama with Mistral/Llama 2 / Groq / openai  |
+| Metadata Database | Qdrant |
+| Authentication | JWT + RBAC |
+| Deployment | Docker Compose |
+
+---
+
+## Quick Start
+
+### Using Docker Compose (Recommended)
+
+```bash
+git clone https://github.com/abderrahmen-bchini/bank-chat-bot-.git
+cd bank-chat-bot-
+
+cp .env.example .env
+docker compose up --build
+
+# Services available at:
+# Web chat interface: http://localhost:5000
+# Admin panel: http://localhost:5000/admin (default login: admin / admin123)
+# Qdrant: http://localhost:6333/dashboard
+# Data persistence: uploads, chat history, and Qdrant storage are saved under ./data
+```
+
+---
+
+## Project Structure
+
+```
+``.
+├── data
+├── docs
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── guides
+│   ├── project
+│   ├── README.md
+│   └── templates
+├── main.py
+├── README.md
+├── requirements.txt
+├── src
+│   ├── config.py
+│   ├── embeddings.py
+│   ├── loader.py
+│   ├── __pycache__
+│   ├── splitter.py
+│   ├── test_embeddings.py
+│   ├── test.py
+│   ├── test_qdrant.py
+│   └── vector_store.py
+└── venv
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    ├── pyvenv.cfg
+    └── share`
+>>>>>>> b3a1d22 (some fixes + changes in chat history and frontend)
 
 ---
 

@@ -1,7 +1,9 @@
 import asyncio
 import hashlib
 import os
+import uuid
 from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +12,15 @@ from qdrant_client import AsyncQdrantClient
 from werkzeug.utils import secure_filename
 
 from ai_chat import get_chat_response
-from config import COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, QDRANT_TIMEOUT_SECONDS
+from chat_history import append_message, create_chat, delete_chat, get_chat, list_chats
+from config import (
+    COLLECTION_NAME,
+    EMBEDDING_MODEL,
+    VECTOR_SIZE,
+    QDRANT_API_KEY,
+    QDRANT_TIMEOUT_SECONDS,
+    QDRANT_URL,
+)
 from document_ingestion import convert_to_markdown
 from loader import load_documents
 from splitter import split_text
@@ -19,7 +29,7 @@ from vector_store import check_database, count_points, create_qdrant_collection,
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
-UPLOAD_DIR = REPO_ROOT / "uploads"
+UPLOAD_DIR = DATA_DIR / "uploads"
 INGESTED_DIR = DATA_DIR / "ingested"
 EXPECTED_POINTS_FILE = BASE_DIR / "expected_points.txt"
 
@@ -30,15 +40,42 @@ app = Flask(
     static_url_path="/static",
 )
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+# Persist anonymous chat history across browser restarts (uses secure cookie).
+app.permanent_session_lifetime = timedelta(days=30)
 
 
 def _now_str() -> str:
     return datetime.now().strftime("%H:%M")
 
 
+def _chat_user_key() -> str:
+    """Return a stable key to store per-user chat history.
+
+    - If admin-authenticated, we scope by the admin username.
+    - Otherwise, we create an anonymous per-browser id in the session cookie.
+    """
+
+    user = session.get("user")
+    if user:
+        return f"user:{user}"
+
+    if not session.get("chat_user_id"):
+        session.permanent = True
+        session["chat_user_id"] = uuid.uuid4().hex
+
+    return f"anon:{session['chat_user_id']}"
+
+
 def _make_point_id(source: str, chunk_index: int) -> str:
     raw = f"{source}|{chunk_index}".encode("utf-8")
     return hashlib.sha1(raw).hexdigest()
+
+
+def _async_qdrant_client() -> AsyncQdrantClient:
+    kwargs: dict[str, Any] = {"url": QDRANT_URL, "timeout": QDRANT_TIMEOUT_SECONDS}
+    if QDRANT_API_KEY:
+        kwargs["api_key"] = QDRANT_API_KEY
+    return AsyncQdrantClient(**kwargs)
 
 
 async def _count_points(client: AsyncQdrantClient) -> int:
@@ -95,11 +132,11 @@ async def ensure_database_is_ready() -> None:
         else:
             raise RuntimeError("Could not embed data into Qdrant.")
 
-        client = AsyncQdrantClient(host="qdrant", port=6333, timeout=QDRANT_TIMEOUT_SECONDS)
+        client = _async_qdrant_client()
         _write_expected_points(await _count_points(client))
         return
 
-    client = AsyncQdrantClient(host="qdrant", port=6333, timeout=QDRANT_TIMEOUT_SECONDS)
+    client = _async_qdrant_client()
     expected = _read_expected_points()
     actual = await _count_points(client)
     if expected != actual:
@@ -195,7 +232,7 @@ def _admin_status() -> dict[str, Any]:
 @app.get("/admin")
 def admin():
     msg = request.args.get("msg")
-    return render_template("admin.html", msg=msg, status=_admin_status())
+    return render_template("admin.html", msg=msg, status=_admin_status(), qdrant_url=QDRANT_URL)
 
 
 @app.post("/admin/ingest")
@@ -389,6 +426,35 @@ def admin_upload():
         return redirect(url_for("admin", msg=f"Upload/convert failed: {type(ex).__name__}: {ex}"))
 
 
+@app.get("/api/chats")
+def api_list_chats():
+    user_key = _chat_user_key()
+    return jsonify({"chats": list_chats(user_key)})
+
+
+@app.post("/api/chats")
+def api_create_chat():
+    user_key = _chat_user_key()
+    chat = create_chat(user_key)
+    return jsonify(chat), 201
+
+
+@app.get("/api/chats/<chat_id>")
+def api_get_chat(chat_id: str):
+    user_key = _chat_user_key()
+    chat = get_chat(user_key, chat_id)
+    if chat is None:
+        return jsonify({"error": "not_found"}), 404
+    return jsonify(chat)
+
+
+@app.delete("/api/chats/<chat_id>")
+def api_delete_chat(chat_id: str):
+    user_key = _chat_user_key()
+    ok = delete_chat(user_key, chat_id)
+    return jsonify({"ok": bool(ok)})
+
+
 @app.get("/")
 def index():
     return render_template("index.html", now=_now_str())
@@ -398,25 +464,33 @@ def index():
 def chat():
     payload = request.get_json(silent=True) or {}
     message = str(payload.get("message", "")).strip()
+    chat_id = str(payload.get("chat_id", "")).strip()
+
     if not message:
-        return jsonify({"response": "Please type a message."}), 400
+        return jsonify({"response": "Please type a message.", "chat_id": chat_id}), 400
+
+    user_key = _chat_user_key()
+
+    # Create a new chat if the client did not provide one (ChatGPT-like behavior).
+    if not chat_id or get_chat(user_key, chat_id) is None:
+        chat_meta = create_chat(user_key)
+        chat_id = str(chat_meta.get("id"))
+
+    append_message(user_key, chat_id, role="user", content=message)
 
     try:
         response = get_chat_response(message)
-        return jsonify({"response": response})
+        append_message(user_key, chat_id, role="assistant", content=response)
+        return jsonify({"response": response, "chat_id": chat_id})
+
     except Exception as ex:
-        return (
-            jsonify(
-                {
-                    "response": (
-                        "Chat failed to answer.\n"
-                        "• Verify Qdrant and GROQ_API_KEY are configured.\n"
-                        f"• Details: **{type(ex).__name__}: {ex}**"
-                    )
-                }
-            ),
-            500,
+        error_text = (
+            "Chat failed to answer.\n"
+            "• Verify Qdrant is reachable and GROQ_API_KEY is configured (if using Groq).\n"
+            f"• Details: **{type(ex).__name__}: {ex}**"
         )
+        append_message(user_key, chat_id, role="assistant", content=error_text)
+        return jsonify({"response": error_text, "chat_id": chat_id}), 500
 
 
 if __name__ == "__main__":

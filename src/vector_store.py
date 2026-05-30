@@ -6,8 +6,12 @@ from qdrant_client.http import models
 from qdrant_client.http.models import PointStruct
 from sentence_transformers import SentenceTransformer
 
+
 def _qdrant_client():
-    return QdrantClient(host="qdrant", port=6333, timeout=QDRANT_TIMEOUT_SECONDS)
+    kwargs = {"url": QDRANT_URL, "timeout": QDRANT_TIMEOUT_SECONDS}
+    if QDRANT_API_KEY:
+        kwargs["api_key"] = QDRANT_API_KEY
+    return QdrantClient(**kwargs)
 
 def embed_database():
     client = _qdrant_client()

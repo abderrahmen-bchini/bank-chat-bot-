@@ -4,8 +4,15 @@ const sendBtn = document.getElementById("sendBtn");
 let typingEl = document.getElementById("typingIndicator");
 const langSelect = document.getElementById("langSelect");
 
+const chatListEl = document.getElementById("chatList");
+const newChatBtn = document.getElementById("newChatBtn");
+const welcomeContentEl = document.getElementById("welcomeContent");
+const welcomeMessageEl = document.getElementById("welcomeMessage");
+
 let currentLang = "en";
 let firstReplyHandled = false;
+
+let currentChatId = localStorage.getItem("wifak_chat_id") || null;
 
 const I18N = {
   en: {
@@ -14,6 +21,9 @@ const I18N = {
     placeholder: "Type a message... (e.g., VPN, leave request, KYC)",
     error: "Sorry - something went wrong.\n• Details: **{detail}**",
     langChanged: "Language set to **English**.",
+    suggestionsTitle: "Suggestions:",
+    suggestions: "VPN access, leave policy, payroll/payslip, KYC/AML, onboarding checklist.",
+    historyHint: "Your previous conversations are available in the left sidebar.",
     topics: {
       onboarding: {
         label: "Onboarding",
@@ -51,6 +61,9 @@ const I18N = {
     placeholder: "Écrivez un message… (ex: VPN, demande de congé, KYC)",
     error: "Désolé — une erreur est survenue.\n• Détail: **{detail}**",
     langChanged: "Langue définie sur **Français**.",
+    suggestionsTitle: "Suggestions :",
+    suggestions: "Accès VPN, politique de congés, paie/bulletin, KYC/AML, checklist onboarding.",
+    historyHint: "Vos conversations précédentes sont disponibles dans la barre latérale.",
     topics: {
       onboarding: {
         label: "Onboarding",
@@ -88,6 +101,9 @@ const I18N = {
     placeholder: "اكتب رسالة… (مثال: VPN، إجازة، KYC)",
     error: "عذرًا — حدث خطأ.\n• التفاصيل: **{detail}**",
     langChanged: "تم ضبط اللغة على **العربية**.",
+    suggestionsTitle: "اقتراحات:",
+    suggestions: "الدخول إلى VPN، سياسة الإجازات، الرواتب/كشف الراتب، KYC/AML، قائمة الاندماج الوظيفي.",
+    historyHint: "ستجد محادثاتك السابقة في الشريط الجانبي.",
     topics: {
       onboarding: {
         label: "الاندماج الوظيفي",
@@ -174,6 +190,19 @@ function scrollToBottom() {
   historyEl.scrollTop = historyEl.scrollHeight;
 }
 
+function setWelcomeVisible(visible) {
+  if (!welcomeMessageEl) return;
+  welcomeMessageEl.style.display = visible ? "" : "none";
+}
+
+function appendMessageEl(el) {
+  if (typingEl && typingEl.parentNode) {
+    historyEl.insertBefore(el, typingEl);
+    return;
+  }
+  historyEl.appendChild(el);
+}
+
 function createMessageEl(role, htmlContent, timeLabel) {
   const wrap = document.createElement("div");
   wrap.className = `message ${role}`;
@@ -207,31 +236,35 @@ function createMessageEl(role, htmlContent, timeLabel) {
   return wrap;
 }
 
-function addUserMessage(text) {
+function addUserMessage(text, timeLabel = nowTime()) {
+  setWelcomeVisible(false);
   const html = `<p>${escapeHtml(text)}</p>`;
-  historyEl.appendChild(createMessageEl("user", html, nowTime()));
+  appendMessageEl(createMessageEl("user", html, timeLabel));
   scrollToBottom();
 }
 
-function addBotMessage(text) {
+function addBotMessage(text, timeLabel = nowTime()) {
   const html = formatBotText(text);
-  historyEl.appendChild(createMessageEl("bot", html, nowTime()));
+  appendMessageEl(createMessageEl("bot", html, timeLabel));
   scrollToBottom();
 }
 
 function setTyping(visible) {
-  if (!typingEl) return;
+  if (!typingEl || firstReplyHandled) return;
   typingEl.hidden = !visible;
-  if (visible) scrollToBottom();
+  if (visible) {
+    // Keep typing indicator at the bottom.
+    historyEl.appendChild(typingEl);
+    scrollToBottom();
+  }
 }
 
 function removeTypingIndicatorAfterFirstReply() {
-  if (firstReplyHandled) return;
   firstReplyHandled = true;
-  if (typingEl) {
-    typingEl.remove();
-    typingEl = null;
+  if (typingEl && typingEl.parentNode) {
+    typingEl.parentNode.removeChild(typingEl);
   }
+  typingEl = null;
 }
 
 function applyLanguage(lang) {
@@ -243,25 +276,144 @@ function applyLanguage(lang) {
   inputEl.placeholder = t().placeholder;
   sendBtn.textContent = t().send;
 
-  document.querySelectorAll(".topic-btn").forEach((btn) => {
-    const key = btn.getAttribute("data-topic");
-    const item = t().topics[key];
-    if (item) btn.textContent = item.label;
-  });
+  if (welcomeContentEl) {
+    welcomeContentEl.innerHTML =
+      `<p><strong>${escapeHtml(t().suggestionsTitle)}</strong> ${escapeHtml(t().suggestions)}</p>` +
+      `<p class="muted">${escapeHtml(t().historyHint)}</p>`;
+  }
 }
 
 async function postChat(message) {
   const res = await fetch("/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, lang: currentLang }),
+    body: JSON.stringify({ message, lang: currentLang, chat_id: currentChatId }),
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.response || `HTTP ${res.status}`);
+  let data = {};
+  try {
+    data = await res.json();
+  } catch (_e) {
+    data = {};
   }
+
+  return { ok: res.ok, status: res.status, data };
+}
+
+function setActiveChatId(chatId) {
+  currentChatId = chatId || null;
+  if (currentChatId) {
+    localStorage.setItem("wifak_chat_id", currentChatId);
+  } else {
+    localStorage.removeItem("wifak_chat_id");
+  }
+}
+
+function clearConversationMessages() {
+  setTyping(false);
+  document.querySelectorAll(".message").forEach((el) => {
+    if (el.id === "welcomeMessage" || el.id === "typingIndicator") return;
+    el.remove();
+  });
+  setWelcomeVisible(true);
+}
+
+function formatChatUpdated(tsSeconds) {
+  const d = new Date((Number(tsSeconds) || 0) * 1000);
+  if (!Number.isFinite(d.getTime()) || d.getTime() === 0) return "";
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString([], { year: "numeric", month: "short", day: "2-digit" });
+}
+
+async function apiListChats() {
+  const res = await fetch("/api/chats", { headers: { "Accept": "application/json" } });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data.chats || [];
+}
+
+async function apiCreateChat() {
+  const res = await fetch("/api/chats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
+}
+
+async function apiGetChat(chatId) {
+  const res = await fetch(`/api/chats/${encodeURIComponent(chatId)}`, {
+    headers: { "Accept": "application/json" },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+async function refreshChatList() {
+  if (!chatListEl) return;
+  try {
+    const chats = await apiListChats();
+    chatListEl.innerHTML = "";
+
+    if (!chats.length) {
+      const empty = document.createElement("div");
+      empty.className = "chat-empty";
+      empty.textContent = "No conversations yet.";
+      chatListEl.appendChild(empty);
+      return;
+    }
+
+    for (const c of chats) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `chat-item${c.id === currentChatId ? " active" : ""}`;
+      btn.innerHTML =
+        `<span class="chat-item-title">${escapeHtml(c.title || "Chat")}</span>` +
+        `<div class="chat-item-time">${escapeHtml(formatChatUpdated(c.updated_at))}</div>`;
+      btn.addEventListener("click", () => loadChat(String(c.id)));
+      chatListEl.appendChild(btn);
+    }
+  } catch (_e) {
+    // If API fails, don’t block the main chat UX.
+    chatListEl.innerHTML = "";
+  }
+}
+
+async function loadChat(chatId) {
+  if (!chatId) return;
+  try {
+    const chat = await apiGetChat(chatId);
+    setActiveChatId(chatId);
+    clearConversationMessages();
+
+    const msgs = Array.isArray(chat.messages) ? chat.messages : [];
+    setWelcomeVisible(!msgs.length);
+    for (const m of msgs) {
+      const role = String(m.role || "");
+      const txt = String(m.content || "");
+      const time = new Date((Number(m.ts) || 0) * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      if (role === "user") addUserMessage(txt, time);
+      else addBotMessage(txt, time);
+    }
+
+    await refreshChatList();
+    scrollToBottom();
+  } catch (_e) {
+    // If chat not found, reset.
+    setActiveChatId(null);
+    clearConversationMessages();
+    await refreshChatList();
+  }
 }
 
 async function sendMessage(presetText) {
@@ -275,12 +427,25 @@ async function sendMessage(presetText) {
   setTyping(true);
 
   try {
-    const data = await postChat(text);
+    const { ok, status, data } = await postChat(text);
+
+    if (data && data.chat_id) {
+      const newId = String(data.chat_id);
+      if (newId && newId !== String(currentChatId || "")) {
+        setActiveChatId(newId);
+      }
+    }
+
     const elapsed = Date.now() - start;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, 800 - elapsed)));
     setTyping(false);
-    addBotMessage(data.response || "(No response)");
+
+    const replyText =
+      data.response || (ok ? "(No response)" : `Server error (HTTP ${status}).`);
+    addBotMessage(replyText);
+
     removeTypingIndicatorAfterFirstReply();
+    await refreshChatList();
   } catch (err) {
     const elapsed = Date.now() - start;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, 800 - elapsed)));
@@ -304,13 +469,22 @@ if (langSelect) {
   applyLanguage(langSelect.value);
 }
 
-document.querySelectorAll(".topic-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const key = btn.getAttribute("data-topic");
-    const prompt = t().topics[key]?.prompt || btn.textContent;
-    sendMessage(prompt);
+
+if (newChatBtn) {
+  newChatBtn.addEventListener("click", async () => {
+    try {
+      const created = await apiCreateChat();
+      const id = String(created.chat_id || created.id || "");
+      setActiveChatId(id || null);
+    } catch (_e) {
+      setActiveChatId(null);
+    }
+
+    clearConversationMessages();
+    await refreshChatList();
+    inputEl.focus();
   });
-});
+}
 
 sendBtn.addEventListener("click", () => sendMessage());
 inputEl.addEventListener("keydown", (e) => {
@@ -320,4 +494,8 @@ inputEl.addEventListener("keydown", (e) => {
   }
 });
 
-window.addEventListener("load", () => scrollToBottom());
+window.addEventListener("load", async () => {
+  await refreshChatList();
+  if (currentChatId) await loadChat(currentChatId);
+  scrollToBottom();
+});
