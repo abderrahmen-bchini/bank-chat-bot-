@@ -24,15 +24,11 @@
 
         <div class="divider"></div>
 
-        <div class="topics" aria-label="Quick topics">
-          <button class="topic-btn" data-topic="onboarding">Onboarding</button>
-          <button class="topic-btn" data-topic="leave">Leave Policy</button>
-          <button class="topic-btn" data-topic="it">IT Support</button>
-          <button class="topic-btn" data-topic="payroll">Payroll</button>
-          <button class="topic-btn" data-topic="compliance">Compliance & KYC</button>
-          <button class="topic-btn" data-topic="credit">Credit & Financing</button>
-          <button class="topic-btn" data-topic="islamic">Islamic Finance</button>
+        <div class="sidebar-actions" aria-label="Conversations">
+          <button id="newChatBtn" class="new-chat-btn" type="button">+ New chat</button>
         </div>
+
+        <div class="chat-list" id="chatList" aria-label="Conversation history"></div>
 
         <div class="sidebar-footer">v1.0 — Wifak Bank © 2025</div>
       </aside>
@@ -61,17 +57,16 @@
         </header>
 
         <section class="history" id="chatHistory" aria-label="Chat message history">
-          <div class="message bot new">
+          <div class="message bot new" id="welcomeMessage">
             <div class="avatar bot" aria-hidden="true">W</div>
             <div class="bubble">
               <div class="meta">
                 <span class="name">Wifak Assistant</span>
                 <span class="time">{{ now }}</span>
               </div>
-              <div class="content">
-                <p>
-                  Hello. I'm your internal assistant. Choose a topic on the left or ask a question.
-                </p>
+              <div class="content" id="welcomeContent">
+                <p><strong>Suggestions:</strong> VPN access, leave policy, payroll/payslip, KYC/AML, onboarding checklist.</p>
+                <p class="muted">Your previous conversations are available in the left sidebar.</p>
               </div>
             </div>
           </div>
