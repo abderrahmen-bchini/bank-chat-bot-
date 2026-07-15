@@ -15,6 +15,10 @@ def _qdrant_client():
 
 def embed_database():
     client = _qdrant_client()
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    create_qdrant_collection()
+
     model = SentenceTransformer(f"sentence-transformers/{EMBEDDING_MODEL}")
 
 # load and split
@@ -41,10 +45,12 @@ def embed_database():
         for i, (embedding, chunk) in enumerate(zip(embeddings, chunks))
     ]
 
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=points
-    )
+    batch_size = 100
+    for i in range(0, len(points), batch_size):
+        client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=points[i:i + batch_size]
+        )
 
     print(f"Inserted {len(points)} points into Qdrant")
     return len(points)
